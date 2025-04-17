@@ -1,0 +1,16 @@
+version: '3.4'
+
+services:
+  webapi:
+    build: .
+    ports:
+      - "5000:80"
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Data Source=db/leaveapp.db
+
+  db:
+    image: nouchka/sqlite3
+    volumes:
+      - ./Data:/db
