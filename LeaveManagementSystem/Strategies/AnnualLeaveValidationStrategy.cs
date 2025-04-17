@@ -6,7 +6,6 @@ namespace LeaveManagementSystem.Strategies
     {
         public Task<bool> ValidateAsync(CreateLeaveRequestDto dto)
         {
-            // Add validation logic for annual leave
             return Task.FromResult(true);
         }
     }

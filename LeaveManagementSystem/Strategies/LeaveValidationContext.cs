@@ -14,13 +14,11 @@ namespace LeaveManagementSystem.Strategies
 
         public async Task<bool> ValidateAsync(CreateLeaveRequestDto dto)
         {
-            // Try to parse the string to the corresponding enum value
             if (!Enum.TryParse(dto.LeaveType, true, out LeaveType leaveType))
             {
                 throw new ArgumentException($"Invalid leave type: {dto.LeaveType}. Must be either 'Sick' or 'Annual'.");
             }
 
-            // Use the parsed enum in the switch statement
             ILeaveValidationStrategy strategy = leaveType switch
             {
                 LeaveType.Sick => _serviceProvider.GetRequiredService<SickLeaveValidationStrategy>(),

@@ -46,26 +46,22 @@ namespace LeaveManagementSystem.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateLeaveRequestDto dto)
         {
-            // Validate EmployeeId
             var employeeExists = await context.Employees.AnyAsync(e => e.Id == dto.EmployeeId);
             if (!employeeExists)
             {
                 return BadRequest("Invalid EmployeeId. Employee does not exist.");
             }
 
-            // Validate date range
             if (dto.EndDate < dto.StartDate)
             {
                 return BadRequest("End date cannot be earlier than start date.");
             }
 
-            // Validate sick leave reason
             if (Enum.TryParse<LeaveType>(dto.LeaveType, true, out var leaveType) && leaveType == LeaveType.Sick && string.IsNullOrWhiteSpace(dto.Reason))
             {
                 return BadRequest("Sick leave must include a reason.");
             }
 
-            // Check for overlapping requests
             bool isOverlapping = await context.LeaveRequests.AnyAsync(r =>
                 r.EmployeeId == dto.EmployeeId &&
                 r.StartDate <= dto.EndDate &&
@@ -76,7 +72,6 @@ namespace LeaveManagementSystem.Controllers
                 return BadRequest("Leave request overlaps with existing request.");
             }
 
-            // Validate annual leave limit
             if (Enum.TryParse<LeaveType>(dto.LeaveType, true, out var leaveTypeAnnual) && leaveTypeAnnual == LeaveType.Annual)
             {
                 var currentYear = dto.StartDate.Year;
@@ -94,7 +89,6 @@ namespace LeaveManagementSystem.Controllers
                 }
             }
 
-            // Map and save the entity
             var entity = mapper.Map<LeaveRequest>(dto);
             entity.CreatedAt = DateTime.Now;
             entity.Status = Status.Pending;
@@ -120,13 +114,11 @@ namespace LeaveManagementSystem.Controllers
             var leaveRequest = await context.LeaveRequests.FindAsync(id);
             if (leaveRequest == null) return NotFound();
 
-            // Parse dto.LeaveType to LeaveType enum
             if (Enum.TryParse<LeaveType>(dto.LeaveType, true, out var leaveType) && leaveType == LeaveType.Sick && string.IsNullOrWhiteSpace(dto.Reason))
             {
                 return BadRequest("Sick leave must include a reason.");
             }
 
-            // Check for overlapping leave requests
             bool isOverlapping = await context.LeaveRequests.AnyAsync(r =>
                 r.EmployeeId == dto.EmployeeId &&
                 r.Id != id &&
@@ -138,7 +130,6 @@ namespace LeaveManagementSystem.Controllers
                 return BadRequest("Leave request overlaps with existing request.");
             }
 
-            // Annual leave validation
             if (Enum.TryParse<LeaveType>(dto.LeaveType, true, out var leaveTypeAnnual) && leaveTypeAnnual == LeaveType.Annual)
             {
                 var currentYear = dto.StartDate.Year;
@@ -157,7 +148,6 @@ namespace LeaveManagementSystem.Controllers
                 }
             }
 
-            // Update the leave request entity
             mapper.Map(dto, leaveRequest);
             await context.SaveChangesAsync();
 
@@ -272,31 +262,27 @@ namespace LeaveManagementSystem.Controllers
         [HttpPost("request")]
         public async Task<IActionResult> CreateLeaveRequest(CreateLeaveRequestDto dto)
         {
-            // Convert the string LeaveType to the LeaveType enum
             if (!Enum.TryParse(dto.LeaveType, true, out LeaveType leaveType))
             {
                 return BadRequest($"Invalid leave type: {dto.LeaveType}. It must be either 'Sick' or 'Annual'.");
             }
 
-            // Validate the leave request using the strategy
             var isValid = await validationContext.ValidateAsync(dto);
             if (!isValid)
             {
                 return BadRequest("Invalid leave request.");
             }
 
-            // Create the leave request
             var leaveRequest = new LeaveRequest
             {
                 EmployeeId = dto.EmployeeId,
-                LeaveType = leaveType,  // Assign the parsed LeaveType enum
+                LeaveType = leaveType,  
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 Reason = dto.Reason,
                 Status = Status.Pending
             };
 
-            // Add and save the leave request
             await repository.AddAsync(leaveRequest);
             await repository.SaveChangesAsync();
 
